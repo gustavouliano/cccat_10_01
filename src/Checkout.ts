@@ -2,6 +2,7 @@ import CouponRepository from './CouponRepository';
 import CouponRepositoryDatabase from './CouponRepositoryDatabase';
 import CurrencyGateway from './CurrencyGateway';
 import CurrencyGatewayHttp from './CurrencyGatewayHttp';
+import FreightCalculator from './FreightCalculator';
 import ProductRepository from './ProductRepository';
 import ProductRepositoryDatabase from './ProductRepositoryDatabase';
 import { validate } from './validator';
@@ -36,9 +37,7 @@ export default class Checkout {
                 else{
                     output.total += parseFloat(productData.price) * item.quantity;
                 }
-                const volume = productData.width / 100 * productData.height / 100 * productData.length / 100;
-                const density = parseFloat(productData.weight) / volume;
-                const itemFreight = 1000 * volume * (density / 100);
+                const itemFreight = FreightCalculator.calculate(productData);
                 output.freight += Math.max(itemFreight, 10) * item.quantity;
                 items.push(item.idProduct);
             }
