@@ -5,10 +5,15 @@ import CurrencyGateway from "../src/CurrencyGateway";
 import CurrencyGatewayHttp from "../src/CurrencyGatewayHttp";
 import ProductRepository from "../src/ProductRepository";
 import ProductRepositoryDatabase from "../src/ProductRepositoryDatabase";
+import crypto from 'crypto';
+import GetOrder from "../src/GetOrder";
+import OrderRepositoryDatabase from "../src/OrderRepositoryDatabase";
 
-let checkout: Checkout; 
+let checkout: Checkout;
+let getOrder: GetOrder;
 beforeEach(() => {
     checkout = new Checkout();
+    getOrder = new GetOrder();
 });
 
 it('Não deve aceitar um pedido com cpf inválido', async () => {
@@ -29,7 +34,9 @@ it('Deve criar um pedido vazio', async () => {
 });
 
 it('Deve criar um pedido com 3 produtos', async () => {
+    const uuid = crypto.randomUUID();
     const input = {
+        uuid,
         cpf: '407.302.170-27',
         items: [
             { idProduct: 1, quantity: 1},
@@ -37,7 +44,8 @@ it('Deve criar um pedido com 3 produtos', async () => {
             { idProduct: 3, quantity: 3}
         ]
     }
-    const output = await checkout.execute(input);
+    await checkout.execute(input);
+    const output = await getOrder.execute(uuid);
     expect(output.total).toBe(6090);
 });
 
@@ -223,4 +231,22 @@ it('Deve criar um pedido com 1 produto em dólar usando um fake', async () => {
     }
     const output = await checkout.execute(input);
     expect(output.total).toBe(3000);
+});
+
+it('Deve criar um pedido e verificar o código de série', async () => {
+    const stub = Sinon.stub(OrderRepositoryDatabase.prototype, 'count').resolves(1);
+    const uuid = crypto.randomUUID();
+    const input = {
+        uuid,
+        cpf: '407.302.170-27',
+        items: [
+            { idProduct: 1, quantity: 1},
+            { idProduct: 2, quantity: 1},
+            { idProduct: 3, quantity: 3}
+        ]
+    }
+    await checkout.execute(input);
+    const output = await getOrder.execute(uuid);
+    expect(output.code).toBe('202300000001');
+    stub.restore();
 });
