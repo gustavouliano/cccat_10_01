@@ -3,11 +3,13 @@ import CurrencyTable from "./CurrencyTable";
 import Item from "./Item";
 import Product from "./Product";
 import crypto from "crypto";
+import Coupon from "./Coupon";
 
 export default class Order {
     readonly items: Item[];
     readonly cpf: Cpf;
     readonly code: string;
+    public coupon?: Coupon
     public freight: number = 0;
 
     constructor(readonly idOrder: string | undefined, cpf: string, readonly currencyTable: CurrencyTable = new CurrencyTable(), readonly sequence: number = 1, readonly date: Date = new Date()) {
@@ -23,7 +25,11 @@ export default class Order {
         this.items.push(new Item(product.idProduct, product.price, quantity, product.currency));
     }
 
-    getCode(){
+    addCoupon(coupon: Coupon): void {
+        if (!coupon.isExpired(this.date)) this.coupon = coupon;
+    }
+
+    getCode(): string {
         return this.code;
     }
 
@@ -31,6 +37,9 @@ export default class Order {
         let total = 0;
         for (const item of this.items){
             total += item.price * item.quantity * this.currencyTable.getCurrency(item.currency);
+        }
+        if (this.coupon){
+            total -= this.coupon.calculateDiscount(total);
         }
         total += this.freight;
         return total;

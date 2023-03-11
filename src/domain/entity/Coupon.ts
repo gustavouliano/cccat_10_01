@@ -7,4 +7,8 @@ export default class Coupon {
     isExpired(today: Date) {
         return this.expireDate.getTime() < today.getTime()   
     }
+
+    calculateDiscount(amount: number): number {
+        return (amount * this.percentage) / 100;
+    }
 }

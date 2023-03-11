@@ -1,4 +1,4 @@
-import Checkout from './Checkout';
+import Checkout from './application/usecase/Checkout';
 
 const input: Input = {
     items: [],

@@ -1,6 +1,6 @@
-import FreightCalculator from './FreightCalculator';
-import ProductRepository from './ProductRepository';
-import ProductRepositoryDatabase from './ProductRepositoryDatabase';
+import FreightCalculator from '../../domain/entity/FreightCalculator';
+import ProductRepository from '../../ProductRepository';
+import ProductRepositoryDatabase from '../../ProductRepositoryDatabase';
 
 export default class SimulateFreight {
 

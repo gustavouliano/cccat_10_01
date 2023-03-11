@@ -1,7 +1,7 @@
 import OrderRepository from "./OrderRepository";
 import pgp from 'pg-promise';
-import Order from "./Order";
-import Item from "./Item";
+import Order from "./domain/entity/Order";
+import Item from "./domain/entity/Item";
 
 export default class OrderRepositoryDatabase implements OrderRepository {
     

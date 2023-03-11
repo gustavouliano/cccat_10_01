@@ -1,14 +1,14 @@
-import CouponRepository from './CouponRepository';
-import CouponRepositoryDatabase from './CouponRepositoryDatabase';
-import CurrencyGateway from './CurrencyGateway';
-import CurrencyGatewayHttp from './CurrencyGatewayHttp';
-import CurrencyTable from './CurrencyTable';
-import FreightCalculator from './FreightCalculator';
-import Order from './Order';
-import OrderRepository from './OrderRepository';
-import OrderRepositoryDatabase from './OrderRepositoryDatabase';
-import ProductRepository from './ProductRepository';
-import ProductRepositoryDatabase from './ProductRepositoryDatabase';
+import CouponRepository from '../../CouponRepository';
+import CouponRepositoryDatabase from '../../CouponRepositoryDatabase';
+import CurrencyGateway from '../../CurrencyGateway';
+import CurrencyGatewayHttp from '../../CurrencyGatewayHttp';
+import CurrencyTable from '../../domain/entity/CurrencyTable';
+import FreightCalculator from '../../domain/entity/FreightCalculator';
+import Order from '../../domain/entity/Order';
+import OrderRepository from '../../OrderRepository';
+import OrderRepositoryDatabase from '../../OrderRepositoryDatabase';
+import ProductRepository from '../../ProductRepository';
+import ProductRepositoryDatabase from '../../ProductRepositoryDatabase';
 
 export default class Checkout {
 
@@ -38,13 +38,11 @@ export default class Checkout {
         if (input.from && input.to){
             order.freight = freight;
         }
-        let total = order.getTotal();
         if (input.coupon){
             const coupon = await this.couponRepository.getCoupon(input.coupon);
-            if (!coupon.isExpired(order.date)){
-                total -= (total * coupon.percentage) / 100;
-            }
+            order.addCoupon(coupon);
         }
+        let total = order.getTotal();
         await this.orderRepository.save(order);
         return {
             total,
