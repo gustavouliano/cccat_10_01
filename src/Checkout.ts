@@ -2,11 +2,13 @@ import CouponRepository from './CouponRepository';
 import CouponRepositoryDatabase from './CouponRepositoryDatabase';
 import CurrencyGateway from './CurrencyGateway';
 import CurrencyGatewayHttp from './CurrencyGatewayHttp';
+import CurrencyTable from './CurrencyTable';
+import FreightCalculator from './FreightCalculator';
+import Order from './Order';
 import OrderRepository from './OrderRepository';
 import OrderRepositoryDatabase from './OrderRepositoryDatabase';
 import ProductRepository from './ProductRepository';
 import ProductRepositoryDatabase from './ProductRepositoryDatabase';
-import { validate } from './validator';
 
 export default class Checkout {
 
@@ -18,58 +20,36 @@ export default class Checkout {
     ){}
 
     public async execute(input: Input): Promise<Output> {
-        const isValid = validate(input.cpf); 
-        if (!isValid) throw new Error('Invalid cpf');
-        const output: Output = {
-            total: 0,
-            freight: 0
-
-        };
         const currencies = await this.currencyGateway.getCurrencies();
-        const items: number[] = [];
+        const currencyTable = new CurrencyTable();
+        currencyTable.addCurrency('USD', currencies.usd);
+        const sequence = await this.orderRepository.count();
+        const order = new Order(input.uuid, input.cpf, currencyTable, sequence, new Date());
+
+        let freight = 0;
         if (input.items){
             for (const item of input.items) {
-                if (item.quantity <= 0) throw new Error('Invalid quantity');
-                if (items.includes(item.idProduct)) throw new Error('Duplicated item');
-                const productData = await this.productRepository.getProduct(item.idProduct);
-                if (productData.width <= 0 || productData.height <= 0 || productData.length <= 0 || parseFloat(productData.weight) <= 0) throw new Error('Invalid dimension');
-                if (productData.currency == 'USD'){
-                    output.total += parseFloat(productData.price) * item.quantity * currencies.usd;
-                }
-                else{
-                    output.total += parseFloat(productData.price) * item.quantity;
-                }
-                const volume = productData.width / 100 * productData.height / 100 * productData.length / 100;
-                const density = parseFloat(productData.weight) / volume;
-                const itemFreight = 1000 * volume * (density / 100);
-                output.freight += Math.max(itemFreight, 10) * item.quantity;
-                item.price = parseFloat(productData.price);
-                items.push(item.idProduct);
-            }
-        }
-        if (input.coupon){
-            const couponData = await this.couponRepository.getCoupon(input.coupon);
-            if (couponData.expire_date.getTime() > new Date().getTime()){
-                const percentage = parseFloat(couponData.percentage);
-                output.total -= (output.total * percentage) / 100;
+                const product = await this.productRepository.getProduct(item.idProduct);
+                order.addItem(product, item.quantity);
+                const itemFreight = FreightCalculator.calculate(product);
+                freight += Math.max(itemFreight, 10) * item.quantity;
             }
         }
         if (input.from && input.to){
-            output.total += output.freight;
+            order.freight = freight;
         }
-        const year = new Date().getFullYear();
-        const sequence = await this.orderRepository.count();
-        const code = `${year}${new String(sequence).padStart(8, '0')}`;
-        const order = {
-            idOrder: input.uuid,
-            total: output.total,
-            code,
-            freight: output.freight,
-            cpf: input.cpf,
-            items: input.items
-        };
+        let total = order.getTotal();
+        if (input.coupon){
+            const coupon = await this.couponRepository.getCoupon(input.coupon);
+            if (!coupon.isExpired(order.date)){
+                total -= (total * coupon.percentage) / 100;
+            }
+        }
         await this.orderRepository.save(order);
-        return output;
+        return {
+            total,
+            freight
+        }
     }
 }
 
