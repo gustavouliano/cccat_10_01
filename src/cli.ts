@@ -25,7 +25,6 @@ process.stdin.on('data', async (chunck) => {
             console.log(e.message);
         }
     }
-    console.log(input);
 })
 
 type Input = {
@@ -34,9 +33,4 @@ type Input = {
     coupon?: string;
     from?: string;
     to?: string;
-}
-
-type Output = {
-    total: number;
-    freight: number;
 }
