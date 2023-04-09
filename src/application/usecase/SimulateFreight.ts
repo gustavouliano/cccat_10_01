@@ -1,11 +1,11 @@
 import FreightCalculator from '../../domain/entity/FreightCalculator';
-import ProductRepository from '../../ProductRepository';
-import ProductRepositoryDatabase from '../../ProductRepositoryDatabase';
+import ProductRepository from '../repository/ProductRepository';
+import ProductRepositoryDatabase from '../../infra/repository/ProductRepositoryDatabase';
 
 export default class SimulateFreight {
 
     constructor(
-        readonly productRepository: ProductRepository = new ProductRepositoryDatabase(),
+        readonly productRepository: ProductRepository
     ){}
 
     public async execute(input: Input): Promise<Output> {

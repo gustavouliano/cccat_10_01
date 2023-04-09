@@ -1,22 +1,22 @@
-import CouponRepository from '../../CouponRepository';
-import CouponRepositoryDatabase from '../../CouponRepositoryDatabase';
-import CurrencyGateway from '../../CurrencyGateway';
-import CurrencyGatewayHttp from '../../CurrencyGatewayHttp';
+import CouponRepository from '../repository/CouponRepository';
+import CouponRepositoryDatabase from '../../infra/repository/CouponRepositoryDatabase';
+import CurrencyGateway from '../gateway/CurrencyGateway';
+import CurrencyGatewayHttp from '../../infra/gateway/CurrencyGatewayHttp';
 import CurrencyTable from '../../domain/entity/CurrencyTable';
 import FreightCalculator from '../../domain/entity/FreightCalculator';
 import Order from '../../domain/entity/Order';
-import OrderRepository from '../../OrderRepository';
-import OrderRepositoryDatabase from '../../OrderRepositoryDatabase';
-import ProductRepository from '../../ProductRepository';
-import ProductRepositoryDatabase from '../../ProductRepositoryDatabase';
+import OrderRepository from '../repository/OrderRepository';
+import OrderRepositoryDatabase from '../../infra/repository/OrderRepositoryDatabase';
+import ProductRepository from '../repository/ProductRepository';
+import ProductRepositoryDatabase from '../../infra/repository/ProductRepositoryDatabase';
 
 export default class Checkout {
 
     constructor(
-        readonly currencyGateway: CurrencyGateway = new CurrencyGatewayHttp(),
-        readonly productRepository: ProductRepository = new ProductRepositoryDatabase(),
-        readonly couponRepository: CouponRepository = new CouponRepositoryDatabase(),
-        readonly orderRepository: OrderRepository = new OrderRepositoryDatabase()
+        readonly currencyGateway: CurrencyGateway,
+        readonly productRepository: ProductRepository,
+        readonly couponRepository: CouponRepository,
+        readonly orderRepository: OrderRepository
     ){}
 
     public async execute(input: Input): Promise<Output> {

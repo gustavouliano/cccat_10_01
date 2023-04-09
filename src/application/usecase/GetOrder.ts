@@ -1,10 +1,10 @@
-import OrderRepository from '../../OrderRepository';
-import OrderRepositoryDatabase from '../../OrderRepositoryDatabase';
+import OrderRepository from '../repository/OrderRepository';
+import OrderRepositoryDatabase from '../../infra/repository/OrderRepositoryDatabase';
 
 export default class GetOrder {
 
     constructor(
-        readonly orderRepository: OrderRepository = new OrderRepositoryDatabase()
+        readonly orderRepository: OrderRepository
     ){}
 
     public async execute(id: string): Promise<Output> {

@@ -1,20 +1,40 @@
 import Sinon from "sinon";
-import Checkout from "../src/application/usecase/Checkout";
-import CouponRepositoryDatabase from "../src/CouponRepositoryDatabase";
-import CurrencyGateway from "../src/CurrencyGateway";
-import CurrencyGatewayHttp from "../src/CurrencyGatewayHttp";
-import ProductRepository from "../src/ProductRepository";
-import ProductRepositoryDatabase from "../src/ProductRepositoryDatabase";
+import Checkout from "../../src/application/usecase/Checkout";
+import CouponRepositoryDatabase from "../../src/infra/repository/CouponRepositoryDatabase";
+import CurrencyGateway from "../../src/application/gateway/CurrencyGateway";
+import CurrencyGatewayHttp from "../../src/infra/gateway/CurrencyGatewayHttp";
+import ProductRepository from "../../src/application/repository/ProductRepository";
+import ProductRepositoryDatabase from "../../src/infra/repository/ProductRepositoryDatabase";
 import crypto from 'crypto';
-import GetOrder from "../src/application/usecase/GetOrder";
-import OrderRepositoryDatabase from "../src/OrderRepositoryDatabase";
-import Product from "../src/domain/entity/Product";
+import GetOrder from "../../src/application/usecase/GetOrder";
+import OrderRepositoryDatabase from "../../src/infra/repository/OrderRepositoryDatabase";
+import Product from "../../src/domain/entity/Product";
+import PgPromise from "../../src/infra/database/PgPromiseAdapter";
+import Connection from "../../src/infra/database/Connection";
+import CouponRepository from "../../src/application/repository/CouponRepository";
+import OrderRepository from "../../src/application/repository/OrderRepository";
+import AxiosAdapter from "../../src/infra/http/AxiosAdapter";
 
 let checkout: Checkout;
 let getOrder: GetOrder;
+let connection: Connection;
+let productRepository: ProductRepository;
+let couponRepository: CouponRepository;
+let orderRepository: OrderRepository;
+
 beforeEach(() => {
-    checkout = new Checkout();
-    getOrder = new GetOrder();
+    connection = new PgPromise();
+    const httpClient = new AxiosAdapter();
+    const currencyGateway = new CurrencyGatewayHttp(httpClient);
+    productRepository = new ProductRepositoryDatabase(connection);
+    couponRepository = new CouponRepositoryDatabase(connection);
+    orderRepository = new OrderRepositoryDatabase(connection);
+    checkout = new Checkout(currencyGateway, productRepository, couponRepository, orderRepository);
+    getOrder = new GetOrder(orderRepository);
+});
+
+afterEach(async () => {
+    await connection.close();
 });
 
 it('Não deve aceitar um pedido com cpf inválido', async () => {
@@ -22,7 +42,7 @@ it('Não deve aceitar um pedido com cpf inválido', async () => {
         cpf: '406.302.170-27',
         items: []
     }
-    expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid cpf'));
+    await expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid cpf'));
 });
 
 it('Deve criar um pedido vazio', async () => {
@@ -85,7 +105,7 @@ it('Não deve criar um pedido com quantidade negativa', async () => {
             { idProduct: 1, quantity: -1}
         ]
     }
-    expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid quantity'));
+    await expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid quantity'));
 });
 
 it('Não deve criar um pedido com item duplicado', async () => {
@@ -96,7 +116,7 @@ it('Não deve criar um pedido com item duplicado', async () => {
             { idProduct: 1, quantity: 1}
         ]
     }
-    expect(() => checkout.execute(input)).rejects.toThrow(new Error('Duplicated item'));
+    await expect(() => checkout.execute(input)).rejects.toThrow(new Error('Duplicated item'));
 });
 
 it('Deve criar um pedido com 1 produto calculando o frete', async () => {
@@ -120,7 +140,7 @@ it('Não deve criar um pedido se o produto tiver alguma dimensão negativa', asy
             { idProduct: 4, quantity: 1}
         ]
     }
-    expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid dimension'));
+    await expect(() => checkout.execute(input)).rejects.toThrow(new Error('Invalid dimension'));
 });
 
 it('Deve criar um pedido com 1 produto calculando o frete com valor mínimo', async () => {
@@ -211,7 +231,7 @@ it('Deve criar um pedido com 1 produto em dólar usando um fake', async () => {
             return new Product(5, 'A', 1000, 10, 10, 10, 10, 'USD');
         },
     }
-    checkout = new Checkout(currencyGateway, productRepository);
+    checkout = new Checkout(currencyGateway, productRepository, couponRepository, orderRepository);
     const input = {
         cpf: '407.302.170-27',
         items: [
